@@ -31,12 +31,24 @@ void send_Request(byte* Request, int Re_len)
 
 void setup() {
     Serial.begin(9600);
-
-    send_Request(ABCreq, 6);
+    Serial1.begin(9600);
 }
 
 void loop() {
 
+    //Si une réponse à été émise du simulateur de capteur
+    if(Serial.available()) {
+        while(Serial.available()) {
+            Serial1.write(Serial.read());
+        }
+    }
+
+    //Si une requete à été émise depuis la carte, nous l'envoyons au simulateur.
+    if(Serial1.available()) {
+        while(Serial1.available()) {
+            Serial.write(Serial1.read());
+        }
+    }
 }
 /**
  * @brief Fonction nécessaire pour l'initialisation de l'arduino

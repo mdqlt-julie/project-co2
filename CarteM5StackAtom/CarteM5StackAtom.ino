@@ -35,11 +35,12 @@ void setup() {
 
 String InputString;
 int stringComplete = 0;
+byte ABCreq[] = { 0xFE, 0X03, 0X00, 0X1F, 0X00, 0X01, 0XA1, 0XC3 };   // 1f in Hex -> 31 dezimal
 
 void loop() {
     
     //J'envoie la requete ping à la carte arduinp
-    Serial1.write("Ping!");
+    Serial1.write(ABCreq, 8);
     Serial.println("Requet envoyé : Ping!");
 
     //J'écoute ce que la carte me répond.
