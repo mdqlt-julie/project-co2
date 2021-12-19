@@ -186,10 +186,10 @@ void setup() {
 
     // TODO: Étant donnée que nous nous occupons pas du callibrage
     // je ne pense pas que celà sois utiliser de vérifier l'auto-callibrage.
-    /*int abc = req(TblOfRequests[ABC]);
+    int abc = req(TblOfRequests[ABC]);
     Serial.print("Période ABC : ");
     Serial.printf("%02ld", abc);
-    Serial.println();*/
+    Serial.println();
 }
 
 

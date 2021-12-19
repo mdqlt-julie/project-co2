@@ -24,12 +24,10 @@ unsigned long ReadCRC;      // CRC Control Return Code
  */
 void _send_Request(byte* Request, int Re_len)
 {
-    while (!Serial1.available())
-    {
+    while(!Serial1.available()) {
         Serial1.write(Request, Re_len);   // Envoie de la requête au capteur S8
         delay(50);
     }
-
 
     //Eventuellement, mettre cette séquence en debuggage.
     Serial.print("Requete : ");

@@ -16,7 +16,7 @@ TFT_eSPI tft = TFT_eSPI(135, 240);
  *
  ***********************************************/
 
-#define TXD2 21         // série capteur TX
+#define TXD2 21         // série capteur TX (bug?)
 #define RXD2 22         // série capteur RX
 #define BOUTON_CAL 35
 #define DEBOUNCE_TIME 1000
@@ -31,7 +31,7 @@ volatile uint32_t DebounceTimer = 0;
 
 byte CO2req[] = { 0xFE, 0X04, 0X00, 0X03, 0X00, 0X01, 0XD5, 0XC5 };
 byte ABCreq[] = { 0xFE, 0X03, 0X00, 0X1F, 0X00, 0X01, 0XA1, 0XC3 };
-byte disableABC[] = { 0xFE, 0X06, 0X00, 0X1F, 0X00, 0X00, 0XAC, 0X03 };  // écrit la période 0 dans le registre HR32 �  adresse 0x001f
+byte disableABC[] = { 0xFE, 0X06, 0X00, 0X1F, 0X00, 0X00, 0XAC, 0X03 };  // écrit la période 0 dans le registre HR32 �  adresse 0x001f
 byte enableABC[] = { 0xFE, 0X06, 0X00, 0X1F, 0X00, 0XB4, 0XAC, 0X74 }; // écrit la période 180
 byte clearHR1[] = { 0xFE, 0X06, 0X00, 0X00, 0X00, 0X00, 0X9D, 0XC5 }; // ecrit 0 dans le registe HR1 adresse 0x00
 byte HR1req[] = { 0xFE, 0X03, 0X00, 0X00, 0X00, 0X01, 0X90, 0X05 }; // lit le registre HR1 (vérifier bit 5 = 1 )
@@ -139,14 +139,14 @@ void IRAM_ATTR etalonnage() {
 // nettoie l'écran et affiche les infos utiles
 void prepareEcran() {
     tft.fillScreen(TFT_BLACK);
-    // texte co2 �  gauche
+    // texte co2 �  gauche
     tft.setTextSize(4);
     tft.setTextColor(TFT_WHITE);
     tft.drawString("CO", 20, 110);
     tft.setTextSize(3);
     tft.drawString("2", 55, 115);
 
-    // texte PPM �  droite ppm
+    // texte PPM �  droite ppm
     tft.drawString("ppm", 190, 105);
 
     // écriture du chiffre
