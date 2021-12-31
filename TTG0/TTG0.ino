@@ -1,6 +1,8 @@
 #include <TFT_eSPI.h>
-#include "Modbus.h"
+#include "SenseairS8.h"
 
+// Sources https://github.com/Xinyuan-LilyGO/TTGO-T-Display
+//Ce fichier est inspiré du contenus dans https://co2.rinolfi.ch/stl/capteurCO2offline.ino
 // ==============================================================================================
 // ==                                                                                          ==
 // ==                                      CONSTANTES                                          ==
@@ -8,8 +10,9 @@
 // ==============================================================================================
 
 //Définition des broches nécessaire au bon fonctionnement du code
-#define RXD2  13 //Allant sur le port UART TxD du capteur (correspond au fil bleu)
-#define TXD2  12 //Allant sur le port UART RxD du capteur (correspond au fil blanc)
+//Le file rouge va sur le pin 5V et le fil Marron sur le pin G
+#define RXD2  13 //Allant sur le port UART TxD du capteur (correspond au fil Orange)
+#define TXD2  12 //Allant sur le port UART RxD du capteur (correspond au fil Jaune)
 
 //Définition des seuil qualité de l'air
 #define AIR_MOYEN 800
@@ -24,24 +27,13 @@
 
 void prepareEcran();
 
-//------------------------------- Prototype concernant le capteur -------------------------------
-/**
- * @brief Fonction émettant une requete basé sur le protocol Modbus,
- * puis ce met en attente d'une réponse provenant du capteur CO²
- * Cette fonction est un condancé des fonction 'send_Request', 'read_Response', et 'get_value'
- * d'où la necessité d'une structure.
- * 
- * @param RequestModbus Requete Modbus sous forme de tableau
- * @return unsigned long Renvoie la valeur retourné par le capteur.
- */
-unsigned long getCo2();
-
 /**
  * @brief Controle le niveau de CO²
  * 
  */
 void checkCO2(unsigned long co2);
 
+void displayError();
 //------------------------------- Prototype des fonctions appellée par le programme. -------------------------------
 /**
  * @brief Fonction nécessaire pour l'initialisation de l'arduino
@@ -60,8 +52,6 @@ void loop();
 // ==                                      VARIABLES                                           ==
 // ==                                                                                          ==
 // ==============================================================================================
-//Requete modbus pour consulter le niveau de CO².
-byte ReqCO2[] = { 0xFE, 0X04, 0X00, 0X03, 0X00, 0X01, 0XD5, 0XC5 }; 
 
 TFT_eSPI tft = TFT_eSPI(135, 240);
 unsigned long ancienCO2 = 0;
@@ -92,15 +82,6 @@ void prepareEcran() {
     tft.setTextSize(8);
 }
 
-
-unsigned long  getCo2() {
-    //Envoie de la requete.
-    _send_Request(ReqCO2, 8);
-    //Réception de la réponse.
-    _read_Response(7);
-   return _get_Value(7);
-}
-
 void printStringTft(int idSeul, uint16_t color, const char* string) {
   tft.setTextColor(color, TFT_BLACK);
   if (seuil != idSeul) {
@@ -115,15 +96,28 @@ void printStringTft(int idSeul, uint16_t color, const char* string) {
 void checkCO2(unsigned long co2) {
 
   Serial.print("Qualiter de l'air : ");
-  if (co2 < AIR_MOYEN) {
-    printStringTft(1, TFT_GREEN, "Air Excellent");
+  if (co2 == 0) {
+    printStringTft(1, TFT_WHITE, "En attente");
+  }else if (co2 == 99) {
+    displayError();
+    return;
+  }else if (co2 < AIR_MOYEN) {
+    printStringTft(3, TFT_GREEN, "Air Excellent");
   } else if (co2 >= AIR_MOYEN && co2 < AIR_MEDIOCRE) {
-    printStringTft(2, TFT_ORANGE, "Air Moyen");
+    printStringTft(4, TFT_ORANGE, "Air Moyen");
   }else if (co2 >= AIR_MEDIOCRE && co2 < AIR_VICIE) {
-    printStringTft(3, TFT_RED, "Air Mediocre");
+    printStringTft(5, TFT_RED, "Air Mediocre");
   } else {
-    printStringTft(4, TFT_RED, "Air Vicie");
+    printStringTft(6, TFT_RED, "Air Vicie");
   }
+    tft.setTextSize(8);
+    tft.drawString(String(co2), tft.width() / 2, tft.height() / 2 - 30);
+}
+
+void displayError() {
+    printStringTft(2, TFT_RED, "Erreur detecter");
+    tft.setTextSize(6);
+    tft.drawString("Erreur", tft.width() / 2, tft.height() / 2 - 30);
 }
 void setup() {
     Serial.begin(115200);
@@ -146,7 +140,7 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
     //Récupération du taux de CO²
-    unsigned long co2 = getCo2();
+    unsigned long co2 = senseairS8.getCO2();
     Serial.println("CO² = " + String(co2));
 
     // efface le chiffre du texte
@@ -155,9 +149,6 @@ void loop() {
     }
     //Controle du co2
     checkCO2(co2);
-
-    tft.setTextSize(8);
-    tft.drawString(String(co2), tft.width() / 2, tft.height() / 2 - 30);
 
     ancienCO2 = co2;
     delay(10000);

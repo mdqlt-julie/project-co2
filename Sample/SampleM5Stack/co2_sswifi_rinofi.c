@@ -44,6 +44,7 @@ unsigned long ReadCRC;      // CRC Control Return Code
 
 void send_Request(byte* Request, int Re_len)
 {
+    //Atention risque de boucle infinie, si problème avec le port Série.
     while (!Serial1.available())
     {
         Serial1.write(Request, Re_len);   // Send request to S8-Sensor
@@ -62,6 +63,8 @@ void send_Request(byte* Request, int Re_len)
 
 void read_Response(int RS_len)
 {
+    //Il manque un test, pour vérifier si nous somme branché sur un port PWM
+    //J'ai eu un retour 0x0 .
     int01 = 0;
     while (Serial1.available() < 7)
     {
