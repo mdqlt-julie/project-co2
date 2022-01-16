@@ -2,8 +2,9 @@
  * @file CarteM5StackAtom.ino
  * @author Julie Brindejont (julie.brindejont@gmail.com)
  * @brief Projet CO²
- * @version 0.1
- * @date 2021-12-18
+ * @version 1.0.0
+ * @date 2022-01-14
+ * 
  * 
  * Projet sympatique menant sur la détection de CO²
  * 
@@ -17,6 +18,7 @@
  * Rouge si supérieur à 1000
  * Rouge clignotant si Erreur détecter.
  * 
+ * Problématique n°1, je ne peut pas créer une interruption directement en gérant un appui de 3sec.
  * @copyright Copyright (c) 2021
  */
 
@@ -42,13 +44,38 @@
 #define AIR_MEDIOCRE 1000
 #define AIR_VICIE 1500
 
+//converti directement les secondes en milisecondes.
+#define ATTENTE_CHECK_CO2 10 * 1000 //nb secondes * (milisecondes dans une secondes)
+
+//Temps (milisecondes) nécessaire à l'utilisateur pour demander une calibration du capteur
+#define TEMPS_BTN_APPUYER 3 * 1000
+
+//Temps (milisecondes) pour clignoter si nécessaire les leds.
+#define TEMPS_CLIGNOTEMENT_LED 1 * 1000
+
 //Création d'une énumération pour définire la couleur des led's.
 typedef enum {
     White = 0xffffff, 
     Green = 0x00ff00, 
     Red = 0xff0000, 
     Orange = 0xff7f00
+    
 } ColorLeds;
+
+
+// ==============================================================================================
+// ==                                                                                          ==
+// ==                                      VARIABLES                                           ==
+// ==                                                                                          ==
+// ==============================================================================================
+
+/**
+ * @brief dernier temps connue du controle de co²
+ * 
+ */
+unsigned long lastTimeCheckCO2 = 0;
+
+bool calibrationRequested = 0;
 
 // ==============================================================================================
 // ==                                                                                          ==
@@ -67,6 +94,7 @@ typedef enum {
  */
 // unsigned long getCO2();
 
+void sendRequestCalibration();
 
 /**
  * @brief Controle le niveau de CO²
@@ -90,14 +118,6 @@ void setup();
  */
 void loop();
 
-// ==============================================================================================
-// ==                                                                                          ==
-// ==                                      VARIABLES                                           ==
-// ==                                                                                          ==
-// ==============================================================================================
-
-//byte ReqCo2[] = { 0xFE, 0X04, 0X00, 0X03, 0X00, 0X01, 0XD5, 0XC5 }; //Requete pour consulter le niveau de CO².
-
 
 // ==============================================================================================
 // ==                                                                                          ==
@@ -105,13 +125,28 @@ void loop();
 // ==                                                                                          ==
 // ==============================================================================================
 
-/*unsigned long  getCO2() {
-    //Envoie de la requete.
-    _send_Request(ReqCo2, 8);
-    //Réception de la réponse.
-    _read_Response(7);
-   return _get_Value(7);
-}*/
+void sendRequestCalibration() {
+        //Serial.println("Demande calibration");
+    byte stateLed = LOW;
+    unsigned long lastBlinkLedWarning = 0;
+
+    while(senseairS8.progressCalibration()){
+        //Vérification si des erreur ont été détecter pendant le calibrage.
+        if(senseairS8.checkError()) {
+            displayError();
+        } else if(millis() - lastBlinkLedWarning >= TEMPS_CLIGNOTEMENT_LED ) {
+            if(stateLed == HIGH) {
+                M5.dis.clear();
+                stateLed = LOW;
+            } else {
+                M5.dis.fillpix(ColorLeds::Orange);
+                stateLed = HIGH;
+            }
+            lastBlinkLedWarning = millis();
+        }
+    }
+    Serial.println("Calibration terminer sans erreur.");
+}
 
 void checkCO2(unsigned long co2) {
 
@@ -142,28 +177,49 @@ void checkCO2(unsigned long co2) {
 void displayError() {
     while(1) {
         M5.dis.fillpix(ColorLeds::Red);
-        delay(500);
+        delay(TEMPS_CLIGNOTEMENT_LED);
         M5.dis.clear();
-        delay(500);
+        delay(TEMPS_CLIGNOTEMENT_LED);
     }
 }
 
 void setup() {
     // ports série et de communication capteur
     M5.begin(true,false,true);
+    //M5.Btn
     Serial1.begin(9600, SERIAL_8N1, PIN_SERIAL_RX, PIN_SERIAL_TX);
-
+    checkCO2(0); //Mise de la led en attente.
+    //attachInterrupt(39, eventInterruptPushButton, FALLING);
 }
 
 
+
 void loop() {
-    //Récupération du taux de CO²
-    unsigned long co2 = senseairS8.getCO2();
-    Serial.println("CO² = " + String(co2));
+    
+    //Récupération du taux de CO² toutes les 10 secondes définis sur la constante 10000
+    //millis actuelle - dernier temps connus >= 10000
+    if(millis() - lastTimeCheckCO2 >= ATTENTE_CHECK_CO2 && !calibrationRequested) {
+        //Récupération du taux de CO²
+        unsigned long co2 = senseairS8.reqCO2();
+        Serial.println("CO² = " + String(co2));
 
-    //Controle du co2
-    checkCO2(co2);
+        //Controle du co2
+        checkCO2(co2);
+        lastTimeCheckCO2 = millis();
 
-    //Attendre 10 secondes avant la prochaine mesure.
-    delay(10000);
+    } else if(calibrationRequested) {
+        //Demande de calibration
+        sendRequestCalibration();
+        calibrationRequested = 0;
+        //M5.update();//Forcer la mise à jour de façon précose affin d'empêcher une 2
+    }
+
+    //Cette instruction met à jour l'état du boutton.
+    M5.update();
+
+    //Si le boutton est appuyer pendant plus de x secondes alors, nous demandons une calibration du capteur.
+    if(M5.Btn.pressedFor(TEMPS_BTN_APPUYER) && !calibrationRequested) {
+        Serial.println("Calibration du capteur demander");
+        calibrationRequested = 1;
+    }
 }

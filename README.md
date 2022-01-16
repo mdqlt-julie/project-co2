@@ -16,20 +16,4 @@ Ce projet fonctionne avec la carte TTG0 et M5Stack Atom.
 * [Carte : Arduino Uno](https://store.arduino.cc/products/arduino-uno-rev3/) pour des tests.
 * [Capteur CO² : Senseair S8](https://senseair.com/products/size-counts/s8-residential/)
 
-## Configuration des broches
-
 **ATTENTION !** à la polarité, c'est le 2ème capteur que je crame.
-
-### - Avec La carte M5Stack-Atom
-
-* Broche **G+** -> **5V** avec le fil violer.
-* Broche **G0** -> **G** avec le fil gris.
-* Broche **UART RxD** -> **21 (TX)** avec le fil vert.
-* Broche **UART TxD** -> **25 (RX)** avec le fil bleu.
-
-### - Avec La carte TTGO
-
-* Broche **G+** -> **5V** avec le fil violet.
-* Broche **G0** -> **G** avec le fil gris.
-* Broche **UART RxD** -> **12 (TX)** avec le fil vert.
-* Broche **UART TxD** -> **13 (RX)** avec le fil bleu.
