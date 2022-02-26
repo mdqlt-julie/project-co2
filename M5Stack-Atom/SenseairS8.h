@@ -1,11 +1,12 @@
+
 /**
  * @file SenseairS8.h
  * @author Julie Brindejont (julie.brindejont@gmail.com)
- * @brief Projet CO²
- * @version 1.0.0
- * @date 2022-01-14
+ * @brief Projet CO² Labfab
+ * @version 1.1.0
+ * @date 2022-02-24
  * 
- * @copyright Copyright (c) 2022
+ * @CC-BY-SA - 2022
  * 
  * Fichier source contenant le nécessaire pour dialoguer avec le capteur de CO² (SenseairS8)
  * Pour plus de clarté et de facilité, j'ai créer une classe (SenseairS8).
