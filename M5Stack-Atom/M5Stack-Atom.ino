@@ -1,10 +1,10 @@
 /**
    @file CarteM5StackAtom.ino
    @author Julie Brindejont (julie.brindejont@gmail.com)
-   @contributor : Pierre-André Souville, Tony Vanpoucke.
+   @contributor : Pierre-André Souville (affichage PPM), Tony Vanpoucke (animations).
    @brief Projet CO²
-   @version 1.0.5
-   @date 2022-02-12
+   @version 1.1.0
+   @date 2022-02-24
 
    Projet sympathique menant sur la détection de CO²
 
@@ -29,6 +29,7 @@
 #endif
 
 #include "SenseairS8.h"
+#include "MatrixDisplayNumbers.h"
 #include <M5Atom.h>
 
 // ==============================================================================================
@@ -74,20 +75,20 @@
 // ==                                                                                          ==
 // ==============================================================================================
 
-/**
-   @brief dernier temps connu du contrôle de co²
-*/
+//  @brief dernier temps connu du contrôle de co²
 unsigned long lastTimeCheckCO2 = 0;
 
-/**
-   @brief permet le clignotement des animations
-*/
+//  @brief c'est ici qu'est stockée la couleur du capteur
+int colorVal;
+
+//  @brief permet le clignotement des animations
 bool AnimSequence;
 
-/**
-   @brief dernier temps connu du contrôle de co²
-*/
+//  @brief Variable pour savoir si une calibration est demandée
 bool calibrationRequested;
+
+//  @brief Variable pour savoir si un affichage du PPM est demandée
+bool showMePPM;
 
 // ==============================================================================================
 // ==                                                                                          ==
@@ -182,15 +183,42 @@ void loop() {
     //Demande de calibration
     sendRequestCalibration();
     calibrationRequested = 0;
+  } else if (showMePPM) {
+    //Animation de "fade-out" lors de l'affichage du CO2
+    for (int i = 10; i > 0; i--) {
+      for (int j = 0; j < 25; j++) {
+        M5.dis.drawpix( j, CHSV( colorVal, 255, i*25));
+      }
+      delay(TEMPO_ANIMATION);
+    }
+    //Afficher le taux de CO2 sur la matrice de LED
+    unsigned long co2 = senseairS8.reqCO2();
+    displayMatrix(String(co2),colorVal);
+
+    //Animation de "fade-in" lors de l'affichage du CO2
+    for (int i = 0; i < 20; i++) {
+      for (int j = 0; j < 25; j++) {
+        M5.dis.drawpix( j, CHSV( colorVal, 255, i*12));
+      }
+      delay(TEMPO_ANIMATION);
+    }
+    showMePPM = 0;
   }
 
   //Cette instruction met à jour l'état du bouton.
   M5.update();
 
+  if (M5.Btn.isPressed() && !calibrationRequested && !showMePPM) {
+    Serial.println();
+    Serial.println("Affichage des PPM demandée");
+    showMePPM = 1;
+    }
   //Si le bouton est appuyé pendant plus de x secondes, alors nous demandons une calibration du capteur.
-  if (M5.Btn.pressedFor(TEMPS_BTN_APPUYER) && !calibrationRequested) {
+  else if (M5.Btn.pressedFor(TEMPS_BTN_APPUYER) && !calibrationRequested) {
+    Serial.println();
     Serial.println("Calibration du capteur demandée");
     calibrationRequested = 1;
+    showMePPM = 0;
   }
 }
 
@@ -241,19 +269,19 @@ void checkCO2(unsigned long co2) {
   } else if (co2 >= LIMITE_BASSE && co2 < (AIR_MOYEN - ANIMATION_OFFSET) ) {
     //Permet d'afficher toutes les leds du m5stack atom en vert
     for (int i = 0; i < 25; i++) {
-      M5.dis.drawpix( i, CHSV( 100, 255, 255));
+      colorVal = 100;                                          //selectionnez la couleur verte
+      M5.dis.drawpix( i, CHSV( colorVal, 255, 255));
     }
     Serial.println("Excellent.");
 
     // ============ CAPTEUR : AIR MOYEN // code couleur : orange ==== //
 
   } else if (co2 >=  (AIR_MOYEN - ANIMATION_OFFSET) && co2 < (AIR_MEDIOCRE + ANIMATION_OFFSET) ) {
+    //selectionnez une teinte de orange en fonction de l'état du CO2
+    colorVal = map(co2, (AIR_MOYEN - ANIMATION_OFFSET), (AIR_MEDIOCRE + ANIMATION_OFFSET), 100, 0);
     //Permet d'afficher toutes les leds du m5stack atom en orange
-
-    int Co2Scale = map(co2, (AIR_MOYEN - ANIMATION_OFFSET), (AIR_MEDIOCRE + ANIMATION_OFFSET), 100, 0);
-
     for (int i = 0; i < 25; i++) {
-      M5.dis.drawpix( i, CHSV( Co2Scale, 255, 255));
+      M5.dis.drawpix( i, CHSV( colorVal, 255, 255));
     }
     Serial.println("Moyen.");
 
@@ -262,6 +290,7 @@ void checkCO2(unsigned long co2) {
   } else if (co2 >= (AIR_MEDIOCRE + ANIMATION_OFFSET) && co2 < AIR_VICIE) {
     //Permet d'afficher toutes les leds du m5stack atom en rouge
     for (int i = 0; i < 25; i++) {
+      colorVal = 0;                                         //selectionnez la couleur rouge
       M5.dis.drawpix( i, CHSV( 0, 255, 255));
     }
     Serial.println("Médiocre.");
@@ -269,17 +298,18 @@ void checkCO2(unsigned long co2) {
     // ============ CAPTEUR : AIR TRES MAUVAIS // code couleur : rouge clignotant ==== //
 
   } else {
+    colorVal = 0;                                         //selectionnez la couleur rouge
     //Permet d'afficher une animation de led rouge clignotante (seuil haut dépassé).
     if (AnimSequence == 1) {
       AnimSequence = 0;
       for (int i = 0; i < 25; i++) {
-        M5.dis.drawpix( i, CHSV( 0, 0, 0));
+        M5.dis.drawpix( i, CHSV( colorVal, 0, 0));
       }
     }
     else if (AnimSequence == 0) {
       AnimSequence = 1;
       for (int i = 0; i < 25; i++) {
-        M5.dis.drawpix( i, CHSV( 0, 255, 255));
+        M5.dis.drawpix( i, CHSV( colorVal, 255, 255));
       }
     }
     Serial.println("Vicié.");
