@@ -67,7 +67,7 @@
 #define COULEUR_CALIBRATION 150
 
 //Temps de démarrage du capteur en "tour d'animations" (1 = 4secondes / 5 = 20 secondes).
-#define TEMPS_DEMARRAGE 5 
+#define TEMPS_DEMARRAGE 5
 
 // ==============================================================================================
 // ==                                                                                          ==
@@ -187,18 +187,18 @@ void loop() {
     //Animation de "fade-out" lors de l'affichage du CO2
     for (int i = 10; i > 0; i--) {
       for (int j = 0; j < 25; j++) {
-        M5.dis.drawpix( j, CHSV( colorVal, 255, i*25));
+        M5.dis.drawpix( j, CHSV( colorVal, 255, i * 25));
       }
       delay(TEMPO_ANIMATION);
     }
     //Afficher le taux de CO2 sur la matrice de LED
     unsigned long co2 = senseairS8.reqCO2();
-    displayMatrix(String(co2),colorVal);
+    displayMatrix(String(co2), colorVal);
 
     //Animation de "fade-in" lors de l'affichage du CO2
     for (int i = 0; i < 20; i++) {
       for (int j = 0; j < 25; j++) {
-        M5.dis.drawpix( j, CHSV( colorVal, 255, i*12));
+        M5.dis.drawpix( j, CHSV( colorVal, 255, i * 12));
       }
       delay(TEMPO_ANIMATION);
     }
@@ -212,7 +212,7 @@ void loop() {
     Serial.println();
     Serial.println("Affichage des PPM demandée");
     showMePPM = 1;
-    }
+  }
   //Si le bouton est appuyé pendant plus de x secondes, alors nous demandons une calibration du capteur.
   else if (M5.Btn.pressedFor(TEMPS_BTN_APPUYER) && !calibrationRequested) {
     Serial.println();
@@ -225,7 +225,7 @@ void loop() {
 // ======================== CALIBRATION DU CAPTEUR CO2 ======================== //
 
 void sendRequestCalibration() {
- 
+
   byte stateLed = LOW;
 
   while (senseairS8.progressCalibration()) {
@@ -301,12 +301,26 @@ void checkCO2(unsigned long co2) {
     colorVal = 0;                                         //selectionnez la couleur rouge
     //Permet d'afficher une animation de led rouge clignotante (seuil haut dépassé).
     if (AnimSequence == 1) {
+      //Animation de "fade-out" lors du clignottement
+      for (int i = 20; i > 0; i--) {
+        for (int j = 0; j < 25; j++) {
+          M5.dis.drawpix( j, CHSV( colorVal, 255, i * 12));
+        }
+        delay(TEMPO_ANIMATION);
+      }
       AnimSequence = 0;
       for (int i = 0; i < 25; i++) {
         M5.dis.drawpix( i, CHSV( colorVal, 0, 0));
       }
     }
     else if (AnimSequence == 0) {
+      //Animation de "fade-in" lors du clignottement
+      for (int i = 0; i < 20; i++) {
+        for (int j = 0; j < 25; j++) {
+          M5.dis.drawpix( j, CHSV( colorVal, 255, i * 12));
+        }
+        delay(TEMPO_ANIMATION);
+      }
       AnimSequence = 1;
       for (int i = 0; i < 25; i++) {
         M5.dis.drawpix( i, CHSV( colorVal, 255, 255));
