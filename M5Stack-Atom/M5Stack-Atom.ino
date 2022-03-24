@@ -27,6 +27,7 @@
 #endif
 
 #include "SenseairS8.h"
+#include "MatrixDiplayNumbers.h"
 #include <M5Atom.h>
 
 // ==============================================================================================
@@ -58,10 +59,11 @@ typedef enum {
     White = 0xffffff, 
     Green = 0x00ff00, 
     Red = 0xff0000, 
-    Orange = 0xff7f00
+    Orange = 0xff7f00,
+    Black = 0x000000
     
 } ColorLeds;
-
+int colorList[] = {ColorLeds::Black, ColorLeds::Green};
 
 // ==============================================================================================
 // ==                                                                                          ==
@@ -158,20 +160,42 @@ void checkCO2(unsigned long co2) {
         //Mettre les led dans un état de clignotement à l'infinie si une erreur est survenue.
         displayError();
     } else if (co2 < AIR_MOYEN) {
+        Serial.println("Excellent.");
+
+        // Affiche le taux obtenu sur l'écran de leds
+        colorList[1] = ColorLeds::Green;
+        //displayCO2(String(co2),colorList);
+        displayCO2(String(co2),colorList);
+
         //Permet d'afficher toute les led du m5stack atom en vert
         M5.dis.fillpix(ColorLeds::Green);
-        Serial.println("Excellent.");
     } else if (co2 >= AIR_MOYEN && co2 < AIR_MEDIOCRE) {
+        Serial.println("Moyen.");
+
+        // Affiche le taux obtenu sur l'écran de leds
+        colorList[1] = ColorLeds::Orange;
+        displayCO2(String(co2),colorList);
+
         //Permet d'afficher toute les led du m5stack atom en orange
         M5.dis.fillpix(ColorLeds::Orange);
-        Serial.println("Moyen.");
     }else if (co2 >= AIR_MEDIOCRE && co2 < AIR_VICIE) {
+        Serial.println("Mediocre.");
+        
+        // Affiche le taux obtenu sur l'écran de leds
+        colorList[1] = ColorLeds::Red;
+        displayCO2(String(co2),colorList);
+
         //Permet d'afficher toute les led du m5stack atom en rouge
         M5.dis.fillpix(ColorLeds::Red);
-        Serial.println("Mediocre.");
     } else {
-        M5.dis.fillpix(ColorLeds::Red);
         Serial.println("Vicie.");
+
+        // Affiche le taux obtenu sur l'écran de leds
+        colorList[1] = ColorLeds::Red;
+        displayCO2(String(co2),colorList);
+        
+        //Permet d'afficher toute les led du m5stack atom en rouge
+        M5.dis.fillpix(ColorLeds::Red);
     }
 }
 void displayError() {
@@ -186,10 +210,16 @@ void displayError() {
 void setup() {
     // ports série et de communication capteur
     M5.begin(true,false,true);
+    M5.IMU.Init();  //Initialisation sensor IMU
     //M5.Btn
     Serial1.begin(9600, SERIAL_8N1, PIN_SERIAL_RX, PIN_SERIAL_TX);
     checkCO2(0); //Mise de la led en attente.
     //attachInterrupt(39, eventInterruptPushButton, FALLING);
+    for (int i = 10; i < 20; i++) {
+        M5.dis.clear();
+        displayCO2(String(i),colorList);
+        delay(1000 * 5);
+    }
 }
 
 
@@ -198,7 +228,7 @@ void loop() {
     
     //Récupération du taux de CO² toutes les 10 secondes définis sur la constante 10000
     //millis actuelle - dernier temps connus >= 10000
-    if(millis() - lastTimeCheckCO2 >= ATTENTE_CHECK_CO2 && !calibrationRequested) {
+  /*  if(millis() - lastTimeCheckCO2 >= ATTENTE_CHECK_CO2 && !calibrationRequested) {
         //Récupération du taux de CO²
         unsigned long co2 = senseairS8.reqCO2();
         Serial.println("CO² = " + String(co2));
@@ -221,5 +251,12 @@ void loop() {
     if(M5.Btn.pressedFor(TEMPS_BTN_APPUYER) && !calibrationRequested) {
         Serial.println("Calibration du capteur demander");
         calibrationRequested = 1;
+    }*/
+   /* for (int i = 0; i < 255; i++) {
+        M5.dis.fillpix(CHSV(100, 255, i));
     }
+    for (int i = 255; i > 0; i--) {
+        M5.dis.fillpix(CHSV(100, 255, i));
+    }
+    M5.update();*/
 }
