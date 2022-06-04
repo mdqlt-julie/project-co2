@@ -39,8 +39,8 @@
 // ==============================================================================================
 
 //Définition des broches nécessaires au bon fonctionnement du code
-#define PIN_SERIAL_RX  21 //Allant sur le port UART TxD du capteur
-#define PIN_SERIAL_TX  25 //Allant sur le port UART RxD du capteur
+#define PIN_SERIAL_RX  25 //Allant sur le port UART TxD du capteur
+#define PIN_SERIAL_TX  21 //Allant sur le port UART RxD du capteur
 
 //Définition des seuils de qualité de l'air
 #define LIMITE_BASSE 300                      // Si en dessous passe le capteur en erreur (air extérieur 400 PPM en moyenne)
